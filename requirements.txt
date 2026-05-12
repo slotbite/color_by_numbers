@@ -7,3 +7,5 @@ reportlab
 torch>=2.3
 torchvision>=0.18
 git+https://github.com/facebookresearch/segment-anything.git
+streamlit>=1.35
+hypothesis>=6.100

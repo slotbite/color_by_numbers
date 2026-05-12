@@ -1,0 +1,285 @@
+/* ============================================================
+   styles.css — Glassmorphism dark mode para Color by Numbers
+   ============================================================ */
+
+/* ── Variables CSS ─────────────────────────────────────────── */
+:root {
+  --bg-dark: #0d0d0d;
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --accent: #7c6af7;
+  --accent-hover: #9b8df9;
+  --text-primary: #e8e8e8;
+  --text-secondary: #a0a0a0;
+  --status-pending: #6b7280;
+  --status-running: #3b82f6;
+  --status-completed: #22c55e;
+  --status-error: #ef4444;
+}
+
+/* ── Fondo general ─────────────────────────────────────────── */
+.stApp {
+  background-color: var(--bg-dark) !important;
+  color: var(--text-primary) !important;
+}
+
+.main .block-container {
+  background-color: var(--bg-dark) !important;
+  padding-top: 1.5rem;
+}
+
+/* ── Ocultar menú hamburguesa, footer y botón Deploy de Streamlit ──── */
+#MainMenu {
+  visibility: hidden !important;
+}
+
+footer {
+  visibility: hidden !important;
+}
+
+/* Botón Deploy (toolbar superior derecha) */
+[data-testid="stToolbar"] {
+  visibility: hidden !important;
+}
+
+[data-testid="stDeployButton"] {
+  display: none !important;
+}
+
+header[data-testid="stHeader"] {
+  background-color: var(--bg-dark) !important;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+/* ── Sidebar ───────────────────────────────────────────────── */
+[data-testid="stSidebar"] {
+  background-color: rgba(13, 13, 13, 0.95) !important;
+  border-right: 1px solid var(--glass-border);
+}
+
+[data-testid="stSidebar"] .block-container {
+  background-color: transparent !important;
+}
+
+/* ── Clase .glass-card ─────────────────────────────────────── */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+/* ── Clase .status-badge ───────────────────────────────────── */
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.status-badge.pending {
+  background-color: rgba(107, 114, 128, 0.2);
+  color: var(--status-pending);
+  border: 1px solid rgba(107, 114, 128, 0.4);
+}
+
+.status-badge.running {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: var(--status-running);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  animation: pulse-blue 1.5s ease-in-out infinite;
+}
+
+.status-badge.completed {
+  background-color: rgba(34, 197, 94, 0.2);
+  color: var(--status-completed);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.status-badge.error {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: var(--status-error);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+@keyframes pulse-blue {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* ── Botones ───────────────────────────────────────────────── */
+.stButton > button {
+  background-color: var(--accent) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 0.5rem 1.25rem !important;
+  font-weight: 600 !important;
+  transition: background-color 0.2s ease, transform 0.1s ease !important;
+}
+
+.stButton > button:hover {
+  background-color: var(--accent-hover) !important;
+  transform: translateY(-1px) !important;
+}
+
+.stButton > button:active {
+  transform: translateY(0) !important;
+}
+
+/* Botones de descarga */
+.stDownloadButton > button {
+  background-color: rgba(124, 106, 247, 0.15) !important;
+  color: var(--accent) !important;
+  border: 1px solid var(--accent) !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.stDownloadButton > button:hover {
+  background-color: rgba(124, 106, 247, 0.3) !important;
+}
+
+/* ── Sliders ───────────────────────────────────────────────── */
+.stSlider [data-baseweb="slider"] {
+  padding-top: 0.5rem;
+}
+
+.stSlider [data-baseweb="slider"] [data-testid="stThumbValue"] {
+  color: var(--accent) !important;
+}
+
+.stSlider [role="slider"] {
+  background-color: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+/* Track del slider */
+.stSlider [data-baseweb="slider"] div[class*="Track"] {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* ── Selectboxes ───────────────────────────────────────────── */
+.stSelectbox [data-baseweb="select"] > div {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 8px !important;
+  color: var(--text-primary) !important;
+}
+
+.stSelectbox [data-baseweb="select"] > div:hover {
+  border-color: var(--accent) !important;
+}
+
+/* Dropdown del selectbox */
+[data-baseweb="popover"] [data-baseweb="menu"] {
+  background-color: #1a1a2e !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 8px !important;
+}
+
+[data-baseweb="popover"] [role="option"]:hover {
+  background-color: rgba(124, 106, 247, 0.2) !important;
+}
+
+/* ── Checkboxes ────────────────────────────────────────────── */
+.stCheckbox [data-baseweb="checkbox"] span {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  border-color: var(--glass-border) !important;
+  border-radius: 4px !important;
+}
+
+.stCheckbox [data-baseweb="checkbox"] input:checked + span {
+  background-color: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+/* ── Expanders ─────────────────────────────────────────────── */
+.streamlit-expanderHeader {
+  background-color: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 8px !important;
+  color: var(--text-primary) !important;
+}
+
+.streamlit-expanderContent {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-top: none !important;
+  border-radius: 0 0 8px 8px !important;
+}
+
+/* ── Tabs ──────────────────────────────────────────────────── */
+.stTabs [data-baseweb="tab-list"] {
+  background-color: transparent !important;
+  border-bottom: 1px solid var(--glass-border) !important;
+  gap: 0.5rem;
+}
+
+.stTabs [data-baseweb="tab"] {
+  background-color: transparent !important;
+  color: var(--text-secondary) !important;
+  border-radius: 8px 8px 0 0 !important;
+  padding: 0.5rem 1rem !important;
+  font-weight: 500 !important;
+}
+
+.stTabs [aria-selected="true"] {
+  background-color: rgba(124, 106, 247, 0.15) !important;
+  color: var(--accent) !important;
+  border-bottom: 2px solid var(--accent) !important;
+}
+
+/* ── Alertas / Mensajes ────────────────────────────────────── */
+.stAlert {
+  border-radius: 8px !important;
+  border: 1px solid var(--glass-border) !important;
+}
+
+/* ── Texto general ─────────────────────────────────────────── */
+.stMarkdown, p, span, label {
+  color: var(--text-primary) !important;
+}
+
+.stCaption, .stCaption p {
+  color: var(--text-secondary) !important;
+}
+
+/* ── Código / JSON ─────────────────────────────────────────── */
+.stJson {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 8px !important;
+}
+
+/* ── Imágenes ──────────────────────────────────────────────── */
+.stImage img {
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+}
+
+/* ── Scrollbar personalizada ───────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(124, 106, 247, 0.4);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 106, 247, 0.7);
+}

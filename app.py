@@ -48,9 +48,12 @@ from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
 def _pick_device(s: str) -> torch.device:
     s = s.lower()
     if s == "auto":
-        if torch.backends.mps.is_available(): return torch.device("mps")
         if torch.cuda.is_available(): return torch.device("cuda")
-        return torch.device("cpu")
+        if torch.backends.mps.is_available(): return torch.device("mps")
+        return torch.device("cpu")  # DirectML no es compatible con SAM
+    if s == "dml":
+        import torch_directml
+        return torch_directml.device()
     return torch.device(s)
 
 def ensure_dir(p: Path):
@@ -335,8 +338,8 @@ def outline_from_labels(labels: np.ndarray, centroids_rgb: np.ndarray, deltaE_th
 
     # 5) Cerrar micro-grietas y depurar
     kclose = morphology.disk(max(1, int(close_gaps_radius)))
-    eb = morphology.binary_closing(e_raw, kclose)
-    eb = morphology.remove_small_holes(eb, area_threshold=64)
+    eb = morphology.closing(e_raw, kclose)
+    eb = morphology.remove_small_holes(eb, max_size=64)
 
     # 6) Afinar y grosor final
     eb = morphology.thin(eb)  # esqueleto 1px, garantizando continuidad
@@ -484,7 +487,7 @@ def main():
     ap.add_argument("--sam-pps", type=int, default=64)
     ap.add_argument("--sam-iou", type=float, default=0.88)
     ap.add_argument("--sam-stability", type=float, default=0.92)
-    ap.add_argument("--sam-device", type=str, default="auto", choices=["auto","cpu","mps","cuda"])
+    ap.add_argument("--sam-device", type=str, default="auto", choices=["auto","cpu","mps","cuda","dml"])
 
     args = ap.parse_args()
 
@@ -534,8 +537,11 @@ def main():
                 labels_smooth[m] = vals[np.argmax(cnt)]
 
     # SAM + modal label con umbral
+    # SAM opera sobre la imagen cuantizada: bordes más limpios y coherentes
+    # con la paleta final (no detecta bordes entre colores que serán el mismo)
+    rgb_quantized = centroids[order][labels_smooth].astype(np.uint8)
     sam_masks = run_sam_masks(
-        img_rgb=rgb_b,
+        img_rgb=rgb_quantized,
         checkpoint=Path(args.sam_checkpoint),
         model_name=args.sam_model,
         device=device,

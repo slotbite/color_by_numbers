@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  web-ui:
+    build: .
+    ports:
+      - "${PORT:-8501}:${PORT:-8501}"
+    environment:
+      - SAM_CHECKPOINT_PATH=/data/sam_vit_b_01ec64.pth
+      - INPUT_DIR=/data/in
+      - OUTPUT_DIR=/data/res
+      - PORT=${PORT:-8501}
+    volumes:
+      - ./sam_vit_b_01ec64.pth:/data/sam_vit_b_01ec64.pth:ro
+      - ./in:/data/in:ro
+      - ./res:/data/res:rw
+    restart: unless-stopped
