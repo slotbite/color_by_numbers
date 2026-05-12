@@ -177,10 +177,10 @@ PARAM_SCHEMA = [
     # ── SAM / Contornos / Numeración ─────────────────────────────────────────
     {
         "key": "sam_device", "label": "Dispositivo SAM",
-        "default": "cpu", "type": str,
+        "default": "cuda", "type": str,
         "choices": ["auto", "cpu", "cuda", "mps", "dml"], "min": None, "max": None,
         "category": "SAM/Contornos/Numeración",
-        "description": "cpu = estable  |  dml = AMD/Intel GPU (experimental, puede fallar con SAM)",
+        "description": "cuda = NVIDIA GPU (recomendado)  |  cpu = estable  |  dml = AMD/Intel GPU (experimental)",
     },
     {
         "key": "sam_pps", "label": "SAM puntos por lado",

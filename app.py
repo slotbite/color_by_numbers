@@ -10,9 +10,12 @@ Color-by-Numbers + SAM (Segment Anything) + SLIC + ΔE2000 edges
 - Contornos: Fallback estructural para garantizar el cierre de zonas (--force-closed).
 """
 
-import argparse, io, csv
+import argparse, io, csv, os
 from pathlib import Path
 from typing import Optional, Dict, List, Tuple
+
+# Reduce fragmentación de memoria CUDA en imágenes grandes
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -52,8 +55,12 @@ def _pick_device(s: str) -> torch.device:
         if torch.backends.mps.is_available(): return torch.device("mps")
         return torch.device("cpu")  # DirectML no es compatible con SAM
     if s == "dml":
-        import torch_directml
-        return torch_directml.device()
+        try:
+            import torch_directml
+            return torch_directml.device()
+        except ImportError:
+            print("⚠️  torch_directml no está instalado. Usando CPU como fallback.")
+            return torch.device("cpu")
     return torch.device(s)
 
 def ensure_dir(p: Path):
@@ -263,18 +270,109 @@ def place_numbers_on_regions(
 def run_sam_masks(img_rgb: np.ndarray, checkpoint: Path, model_name: str, device: torch.device,
                   points_per_side=64, pred_iou_thresh=0.88, stability_score_thresh=0.92,
                   min_mask_region_area=5000) -> List[np.ndarray]:
+    """
+    Ejecuta SAM con reintentos automáticos ante CUDA OOM.
+    En cada reintento reduce la resolución de la imagen (×0.75) y los puntos por lado (//1.5),
+    hasta un mínimo de 512px de ancho y 16 puntos por lado.
+    Si el dispositivo es CUDA y falla todos los intentos, hace fallback a CPU.
+    """
+    orig_h, orig_w = img_rgb.shape[:2]
+    current_img = img_rgb
+    current_pps = points_per_side
+    attempt = 0
+    max_attempts = 4
+
+    # Escala de reducción por intento: 100% → 75% → 56% → 42%
+    SCALE_FACTOR = 0.75
+    MIN_WIDTH = 512
+    MIN_PPS = 16
+
     sam = sam_model_registry[model_name](checkpoint=str(checkpoint))
     sam.to(device=device)
-    gen = SamAutomaticMaskGenerator(
-        model=sam,
-        points_per_side=points_per_side,
-        pred_iou_thresh=pred_iou_thresh,
-        stability_score_thresh=stability_score_thresh,
-        min_mask_region_area=min_mask_region_area
-    )
-    masks = gen.generate(img_rgb)
-    masks = sorted(masks, key=lambda m: m['area'], reverse=True)
-    return [m["segmentation"] for m in masks]
+
+    while attempt < max_attempts:
+        attempt += 1
+        h, w = current_img.shape[:2]
+        print(f"🔍 SAM intento {attempt}/{max_attempts}: resolución {w}×{h}, pps={current_pps}")
+
+        try:
+            if device.type == "cuda":
+                torch.cuda.empty_cache()
+
+            gen = SamAutomaticMaskGenerator(
+                model=sam,
+                points_per_side=current_pps,
+                pred_iou_thresh=pred_iou_thresh,
+                stability_score_thresh=stability_score_thresh,
+                min_mask_region_area=min_mask_region_area
+            )
+            masks = gen.generate(current_img)
+            masks = sorted(masks, key=lambda m: m['area'], reverse=True)
+
+            # Si la imagen fue reducida, escalar las máscaras de vuelta al tamaño original
+            if (h, w) != (orig_h, orig_w):
+                print(f"↩️  Escalando máscaras de {w}×{h} → {orig_w}×{orig_h}")
+                scaled = []
+                for seg in [m["segmentation"] for m in masks]:
+                    seg_up = cv2.resize(
+                        seg.astype(np.uint8),
+                        (orig_w, orig_h),
+                        interpolation=cv2.INTER_NEAREST
+                    ).astype(bool)
+                    scaled.append(seg_up)
+                return scaled
+
+            return [m["segmentation"] for m in masks]
+
+        except torch.OutOfMemoryError as e:
+            print(f"⚠️  CUDA OOM en intento {attempt}: {e}")
+            if device.type == "cuda":
+                torch.cuda.empty_cache()
+
+            # Calcular nueva resolución reducida
+            new_w = max(MIN_WIDTH, int(w * SCALE_FACTOR))
+            new_h = int(h * (new_w / w))
+            new_pps = max(MIN_PPS, int(current_pps / 1.5))
+
+            if new_w == w and new_pps == current_pps:
+                # No hay más reducción posible
+                break
+
+            print(f"   Reduciendo a {new_w}×{new_h}, pps={new_pps} y reintentando...")
+            current_img = cv2.resize(img_rgb, (new_w, new_h), interpolation=cv2.INTER_AREA)
+            current_pps = new_pps
+
+    # Fallback a CPU si CUDA falló en todos los intentos
+    if device.type == "cuda":
+        print("⚠️  Todos los intentos CUDA fallaron. Ejecutando SAM en CPU (más lento)...")
+        sam_cpu = sam_model_registry[model_name](checkpoint=str(checkpoint))
+        sam_cpu.to(device=torch.device("cpu"))
+        # Usar imagen reducida para CPU también (evitar swap)
+        cpu_w = max(MIN_WIDTH, min(orig_w, 1500))
+        cpu_h = int(orig_h * (cpu_w / orig_w))
+        cpu_img = cv2.resize(img_rgb, (cpu_w, cpu_h), interpolation=cv2.INTER_AREA)
+        cpu_pps = max(MIN_PPS, min(current_pps, 32))
+        print(f"   CPU SAM: {cpu_w}×{cpu_h}, pps={cpu_pps}")
+        gen = SamAutomaticMaskGenerator(
+            model=sam_cpu,
+            points_per_side=cpu_pps,
+            pred_iou_thresh=pred_iou_thresh,
+            stability_score_thresh=stability_score_thresh,
+            min_mask_region_area=min_mask_region_area
+        )
+        masks = gen.generate(cpu_img)
+        masks = sorted(masks, key=lambda m: m['area'], reverse=True)
+        scaled = []
+        for seg in [m["segmentation"] for m in masks]:
+            seg_up = cv2.resize(
+                seg.astype(np.uint8),
+                (orig_w, orig_h),
+                interpolation=cv2.INTER_NEAREST
+            ).astype(bool)
+            scaled.append(seg_up)
+        return scaled
+
+    raise RuntimeError("SAM falló en todos los intentos y no hay fallback disponible.")
 
 def labels_modal_within_masks(labels: np.ndarray, masks: List[np.ndarray], modal_frac: float = 0.7) -> np.ndarray:
     out = labels.copy()

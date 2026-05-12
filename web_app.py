@@ -446,6 +446,65 @@ def render_history_panel(history_path: Path) -> None:
                 with img_col3:
                     st.image(str(out / "03_palette.png"), caption="Paleta")
 
+                # ── Botones de descarga ─────────────────────────────────────
+                dl_col1, dl_col2, dl_col3, dl_col4, dl_col5 = st.columns(5)
+                pdf_path = out / "color_by_numbers_kit.pdf"
+                csv_path = out / "palette.csv"
+                outline_path = out / "01_outline_numbered.png"
+                ref_path     = out / "02_colored_reference.png"
+                palette_path = out / "03_palette.png"
+
+                with dl_col1:
+                    if pdf_path.exists():
+                        st.download_button(
+                            "📥 PDF",
+                            data=pdf_path.read_bytes(),
+                            file_name=pdf_path.name,
+                            mime="application/pdf",
+                            key=f"hist_dl_pdf_{record.job_id}",
+                            use_container_width=True,
+                        )
+                with dl_col2:
+                    if csv_path.exists():
+                        st.download_button(
+                            "📥 CSV paleta",
+                            data=csv_path.read_bytes(),
+                            file_name=csv_path.name,
+                            mime="text/csv",
+                            key=f"hist_dl_csv_{record.job_id}",
+                            use_container_width=True,
+                        )
+                with dl_col3:
+                    if outline_path.exists():
+                        st.download_button(
+                            "📥 Outline",
+                            data=outline_path.read_bytes(),
+                            file_name=f"{record.job_id}_outline.png",
+                            mime="image/png",
+                            key=f"hist_dl_outline_{record.job_id}",
+                            use_container_width=True,
+                        )
+                with dl_col4:
+                    if ref_path.exists():
+                        st.download_button(
+                            "📥 Referencia",
+                            data=ref_path.read_bytes(),
+                            file_name=f"{record.job_id}_referencia.png",
+                            mime="image/png",
+                            key=f"hist_dl_ref_{record.job_id}",
+                            use_container_width=True,
+                        )
+                with dl_col5:
+                    if palette_path.exists():
+                        st.download_button(
+                            "📥 Paleta",
+                            data=palette_path.read_bytes(),
+                            file_name=f"{record.job_id}_paleta.png",
+                            mime="image/png",
+                            key=f"hist_dl_palette_{record.job_id}",
+                            use_container_width=True,
+                        )
+
             if st.button("↩️ Reutilizar config", key=f"reuse_{record.job_id}"):
                 # Guardar en estado pendiente — se aplicará al inicio del próximo ciclo
                 # antes de que los widgets se instancien (ver main())
