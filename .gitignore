@@ -39,3 +39,8 @@ iteration/
 # No es necesario listar 'res/' aquí ya que por defecto es rastreada.
 # Esta línea solo sirve como recordatorio:
 #!res/
+*.jpg
+*.pdf
+*.png
+res/history.json
+res/*/*.csv
